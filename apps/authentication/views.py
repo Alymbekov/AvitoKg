@@ -4,9 +4,11 @@ from django.views import View
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.views import TokenObtainPairView
 
-from apps.authentication.send_mail import send_confirmation_email
-from apps.authentication.serializers import RegisterApiSerializer
+from apps.authentication.serializers import (
+    RegisterApiSerializer, LoginSerializer)
+from apps.authentication.tasks import send_notification_task
 
 User = get_user_model()
 
@@ -19,7 +21,7 @@ class RegisterApiView(APIView):
             user = serializer.save()
             if user:
                 #TODO add send message with celery
-                send_confirmation_email(user)
+                send_notification_task.delay(user=user.id, seconds=30)
                 return Response(
                     serializer.data, status=status.HTTP_201_CREATED
                 )
@@ -40,6 +42,7 @@ class ActivationView(View):
             return render(request, 'account/link_exp.html', {})
 
 
-
+class LoginApiView(TokenObtainPairView):
+    serializer_class = LoginSerializer
 
 

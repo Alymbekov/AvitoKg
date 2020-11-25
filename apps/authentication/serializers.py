@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, authenticate
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 User = get_user_model()
 
@@ -45,7 +46,39 @@ class RegisterApiSerializer(serializers.ModelSerializer):
         return user
 
 
+class LoginSerializer(TokenObtainPairSerializer):
+    password = serializers.CharField(
+        min_length=6, write_only=True
+    )
+    user_type = serializers.ChoiceField(
+        choices=USER_TYPE_CHOICES
+    )
 
+    def validate_email(self, value):
+        if not User.objects.filter(email=value).exists():
+            raise serializers.ValidationError(
+                """
+                User with this email 
+                not found!Please resend
+                with valid email"""
+            )
+        return value
 
+    def validate(self, attrs):
+        email = attrs.get('email')
+        user_type = attrs.get('user_type')
+
+        password = attrs.pop('password', None)
+        if not User.objects.filter(email=email, user_type=user_type).exists():
+            raise serializers.ValidationError('Not Found')
+
+        user = authenticate(username=email, password=password)
+        if user and user.is_active:
+            refresh = self.get_token(user)
+
+            attrs['refresh'] = str(refresh)
+            attrs['access'] = str(refresh.access_token)
+
+        return attrs
 
 
