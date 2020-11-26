@@ -85,6 +85,14 @@ class User(AbstractEmailUser):
             email=self.email
         )
 
-
     def create_activation_code(self):
         self.activation_code = str(uuid.uuid4())
+
+    @property
+    def is_owner(self):
+        return self.user_type == 'owner'
+
+    @property
+    def is_reader(self):
+        return self.user_type == 'reader'
+
