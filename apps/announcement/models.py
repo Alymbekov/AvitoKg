@@ -18,6 +18,7 @@ class AnnouncementModel(models.Model):
     author = models.ForeignKey(
         User, related_name='announcements', on_delete=models.CASCADE, null=True
     )
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.title
